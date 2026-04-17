@@ -27,6 +27,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 #SECRET_KEY = os.environ.get('SECRET_KEY')
 SECRET_KEY = config('SECRET_KEY')
 
+# Railway
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
