@@ -3,7 +3,7 @@ from django.core.cache import cache
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, APIView
 import requests
-from datetime import datetime, timezone
+#import datetime, timezone
 import asyncio
 import httpx
 from django.conf import settings
@@ -35,7 +35,7 @@ class ProfileService:
             except Exception:
                 return None, "Connection failure to upstream services"
 
-           # Parse JSON
+            # Parse JSON
             gender_data, age_data, nation_data = [res.json() for res in response]
 
             # Edge Case Validation (Requirement 502)
