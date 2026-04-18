@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.core.cache import cache
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, APIView
+from rest_framework.decorators import api_view, APIView, staticmethod
 import requests
 #import datetime, timezone
 import asyncio
@@ -13,12 +13,15 @@ from . models import Profile
 
 
 class ProfileService:
+
+    @staticmethod
     def classify_age_group(age):
         if age <= 12: return "child"
         if age <= 19: return "teenager"
         if age <= 59: return "adult"
         return "senior"
     
+    @staticmethod
     async def fetch_profile_data(name):
         #checks if profile is already in database
         existing = await Profile.objects.filter(name__iexact=name).afirst()
