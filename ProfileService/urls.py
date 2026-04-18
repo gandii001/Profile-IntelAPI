@@ -16,7 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
+from django.views.decorators.http import require_http_methods
+from rest_framework.response import Response
+from rest_framework import status
 
+
+@require_http_methods(["OPTIONS"])
+def cors_preflight(request):
+    return Response(status=status.HTTP_200_OK)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
