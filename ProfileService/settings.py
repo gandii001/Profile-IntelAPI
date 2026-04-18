@@ -95,12 +95,25 @@ ASGI_APPLICATION = 'ProfileService.asgi.application'
 
 import dj_database_url
 
-DATABASES = {
-    'default': dj_database_url.config(
-        conn_max_age=600,
-        conn_health_checks=True  # Recommended for persistent connections
-    )
-}
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if not DATABASE_URL:
+    # Fallback for development/testing
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+            DISABLE_SERVER_SIDE_CURSORS=True,
+        )
+    }
 
 
 
