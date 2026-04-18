@@ -34,7 +34,9 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-ALLOWED_HOSTS = ['*']  
+ALLOWED_HOSTS = ['profileintelapi.up.railway.app', 'localhost', '127.0.0.1', '*']
+if os.environ.get('RAILWAY_ENVIRONMENT'):
+    ALLOWED_HOSTS.append(os.environ.get('RAILWAY_ENVIRONMENT_NAME', '')) 
 
 
 # Application definition
@@ -57,6 +59,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -155,6 +158,11 @@ REST_FRAMEWORK = {
 }
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
 
 CORS_ALLOW_ALL_ORIGINS = True
 
