@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.core.cache import cache
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, APIView, staticmethod
+from rest_framework.decorators import api_view, APIView
 import requests
 #import datetime, timezone
 import asyncio
