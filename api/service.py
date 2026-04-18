@@ -3,17 +3,16 @@ from django.core.cache import cache
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, APIView
 import requests
-#import datetime, timezone
+from datetime import datetime, timezone
 import asyncio
 import httpx
 from django.conf import settings
-from . models import Profile
+from .models import Profile
 
 
 
 
 class ProfileService:
-
     @staticmethod
     def classify_age_group(age):
         if age <= 12: return "child"
@@ -64,9 +63,3 @@ class ProfileService:
                 country_probability=top_country["probability"]
             )
             return new_profile, None
-
-               
-        
-        
-            
-     
