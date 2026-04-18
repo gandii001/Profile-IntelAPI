@@ -2,6 +2,8 @@ from rest_framework import serializers
 from .models import Profile
 
 class ProfileSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format='iso-8601')
+    
     class Meta:
         model = Profile
-        fields = '__all__' 
+        fields = ['id', 'name', 'gender', 'gender_probability', 'sample_size', 'age', 'age_group', 'country_id', 'country_probability', 'created_at']

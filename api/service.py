@@ -15,10 +15,14 @@ from .models import Profile
 class ProfileService:
     @staticmethod
     def classify_age_group(age):
-        if age <= 12: return "child"
-        if age <= 19: return "teenager"
-        if age <= 59: return "adult"
-        return "senior"
+        if age <= 12:
+            return "child"
+        elif age <= 19:
+            return "teenager"
+        elif age <= 59:
+            return "adult"
+        else:
+            return "senior"
     
     @staticmethod
     async def fetch_profile_data(name):

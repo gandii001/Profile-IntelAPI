@@ -38,18 +38,22 @@ class ProfileListCreateView(APIView):
         
         if error == "Connection failure":
             return Response(
-                {"status": "error", "message": error}, 
+                {"status": "error", "message": "Connection failure to upstream services"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
         # Serialize database object
         serializer = ProfileSerializer(result)
-        response_data = {"status": "success", "data": serializer.data}
-
+        
         if error == "Profile already exists":
-            response_data["message"] = "Profile already exists"
+            response_data = {
+                "status": "success", 
+                "message": "Profile already exists",
+                "data": serializer.data
+            }
             return Response(response_data, status=status.HTTP_200_OK)
 
+        response_data = {"status": "success", "data": serializer.data}
         return Response(response_data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
@@ -71,11 +75,22 @@ class ProfileListCreateView(APIView):
         # Convert to list
         profiles = list(queryset)
         
-        serializer = ProfileSerializer(profiles, many=True)
+        # For list response, only include specific fields as per spec
+        data = []
+        for profile in profiles:
+            data.append({
+                "id": str(profile.id),
+                "name": profile.name,
+                "gender": profile.gender,
+                "age": profile.age,
+                "age_group": profile.age_group,
+                "country_id": profile.country_id,
+            })
+        
         return Response({
             "status": "success",
             "count": len(profiles),
-            "data": serializer.data
+            "data": data
         }, status=status.HTTP_200_OK)
 
 
