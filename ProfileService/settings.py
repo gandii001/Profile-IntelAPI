@@ -24,8 +24,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 
-#SECRET_KEY = os.environ.get('SECRET_KEY')
-SECRET_KEY = config('SECRET_KEY')
+# Get SECRET_KEY from environment or use a default for development
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-development-key-change-in-production')
 
 # Railway
 #DEBUG = config('DEBUG', default=False, cast=bool)
@@ -111,7 +111,6 @@ else:
             default=DATABASE_URL,
             conn_max_age=600,
             conn_health_checks=True,
-            DISABLE_SERVER_SIDE_CURSORS=True,
         )
     }
 
