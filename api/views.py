@@ -17,17 +17,31 @@ class ProfileListCreateView(APIView):
     
     def post(self, request):
         """Create new profile - SYNC wrapper for async service"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"POST /api/profiles request received")
+        logger.info(f"Request method: {request.method}")
+        logger.info(f"Request content-type: {request.content_type}")
+        logger.info(f"Request data: {request.data}")
+        
         name = request.data.get('name')
+        logger.info(f"Extracted name: {name}")
         
         if not name or not isinstance(name, str):
+            logger.warning(f"Invalid name: {name}")
             return Response(
                 {"status": "error", "message": "Missing or empty name"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        logger.info(f"Calling ProfileService.fetch_profile_data with name={name}")
+        
         # Run async function synchronously
         from asgiref.sync import async_to_sync
         result, error = async_to_sync(ProfileService.fetch_profile_data)(name)
+        
+        logger.info(f"Service returned: result={result}, error={error}")
 
         # Handle errors
         if error == "invalid response":
