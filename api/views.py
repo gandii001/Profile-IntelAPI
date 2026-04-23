@@ -78,7 +78,7 @@ class ProfileListCreateView(APIView):
 
         # Build queryset
         queryset = Profile.objects.all()
-        
+
         if gender:
             queryset = queryset.filter(gender__iexact=gender)
         if country:

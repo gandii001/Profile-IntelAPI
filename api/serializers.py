@@ -6,4 +6,4 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Profile
-        fields = ['id', 'name', 'gender', 'gender_probability', 'sample_size', 'age', 'age_group', 'country_id', 'country_probability', 'created_at']
+        fields = ['id', 'name', 'gender', 'gender_probability','age', 'age_group', 'country_id','country_name', 'country_probability', 'created_at']
