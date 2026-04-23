@@ -10,6 +10,12 @@ import pycountry
 class NaturalLanguageQueryParser:
     """Parse natural language queries into filter parameters"""
     
+    # Pseudo age groups (map to age ranges but NOT stored in DB)
+    PSEUDO_GROUPS = ['young', 'youth', 'old', 'older', 'middle-aged', 'mature']
+    
+    # Real age groups (stored in database)
+    REAL_GROUPS = ['child', 'teenager', 'adult', 'senior']
+    
     # Age group mappings
     AGE_GROUPS = {
         'child': (0, 12),
@@ -116,7 +122,11 @@ class NaturalLanguageQueryParser:
         # Check for explicit age groups first
         for group_keyword, (min_age, max_age) in self.AGE_GROUPS.items():
             if group_keyword in self.query:
-                age_info['age_group'] = group_keyword
+                # Only add age_group if it's a REAL database group, not pseudo
+                if group_keyword in self.REAL_GROUPS:
+                    age_info['age_group'] = group_keyword
+                
+                # Always add age range
                 age_info['min_age'] = min_age
                 age_info['max_age'] = max_age
                 
@@ -132,7 +142,7 @@ class NaturalLanguageQueryParser:
                 
                 return age_info
         
-        # Extract numeric ages with patterns
+        # Extract numeric ages with patterns (if no group keyword matched)
         # Pattern: "above X", "over X", "older than X"
         above_match = re.search(r'(above|over|older than)\s+(\d+)', self.query)
         if above_match:
@@ -159,31 +169,25 @@ class NaturalLanguageQueryParser:
         return age_info if age_info else {}
     
     def _extract_country(self):
-        """Extract country from query"""
+        """Extract country from query using pycountry"""
         
-        # Remove common stop words
-        cleaned_query = self.query
-        stop_words = ['from', 'in', 'of', 'the', 'and', 'or', 'a', 'an']
-        for word in stop_words:
-            cleaned_query = cleaned_query.replace(word, ' ')
-        
-        # Try to find country by name
-        # Get all country names from pycountry
         try:
+            # Try to match by full country name first
             for country in pycountry.countries:
                 country_name = country.name.lower()
                 
-                # Check if country name appears in query
+                # Exact match for full country name
                 if country_name in self.query:
                     return country.alpha_2
                 
-                # Check common variations
-                if country_name.split(',')[0] in self.query:  # Handle "country, region"
+                # Match first part (handles "United States" when query has "united states")
+                country_first_part = country_name.split(',')[0].lower()
+                if country_first_part in self.query and len(country_first_part) > 3:
                     return country.alpha_2
         except:
             pass
         
-        # Common country name variations
+        # Fallback: hardcoded country variations for common misspellings/variations
         country_variations = {
             'nigeria': 'NG',
             'ghana': 'GH',
@@ -195,9 +199,11 @@ class NaturalLanguageQueryParser:
             'south africa': 'ZA',
             'southafrica': 'ZA',
             'cameroon': 'CM',
+            'cameroun': 'CM',
             'senegal': 'SN',
             'ivory coast': 'CI',
             'ivorycoast': 'CI',
+            'côte d\'ivoire': 'CI',
             'benin': 'BJ',
             'ethiopia': 'ET',
             'angola': 'AO',
@@ -206,24 +212,67 @@ class NaturalLanguageQueryParser:
             'zimbabwe': 'ZW',
             'malawi': 'MW',
             'rwanda': 'RW',
+            'botswana': 'BW',
+            'namibia': 'NA',
+            'lesotho': 'LS',
+            'mauritius': 'MU',
+            'madagascar': 'MG',
+            'cape verde': 'CV',
+            'gambia': 'GM',
+            'guinea': 'GN',
+            'liberia': 'LR',
+            'sierra leone': 'SL',
+            'togo': 'TG',
+            'niger': 'NE',
+            'mali': 'ML',
+            'mauritania': 'MR',
+            'western sahara': 'EH',
             'united states': 'US',
             'usa': 'US',
             'america': 'US',
             'united kingdom': 'GB',
             'uk': 'GB',
             'england': 'GB',
+            'scotland': 'GB',
+            'wales': 'GB',
             'france': 'FR',
             'germany': 'DE',
             'italy': 'IT',
             'spain': 'ES',
+            'portugal': 'PT',
+            'netherlands': 'NL',
+            'belgium': 'BE',
+            'switzerland': 'CH',
+            'austria': 'AT',
+            'sweden': 'SE',
+            'norway': 'NO',
+            'denmark': 'DK',
+            'finland': 'FI',
+            'poland': 'PL',
+            'russia': 'RU',
             'india': 'IN',
+            'pakistan': 'PK',
+            'bangladesh': 'BD',
             'china': 'CN',
             'japan': 'JP',
+            'south korea': 'KR',
+            'korea': 'KR',
+            'thailand': 'TH',
+            'vietnam': 'VN',
+            'philippines': 'PH',
+            'indonesia': 'ID',
+            'malaysia': 'MY',
+            'singapore': 'SG',
             'australia': 'AU',
+            'new zealand': 'NZ',
             'canada': 'CA',
             'mexico': 'MX',
             'brazil': 'BR',
             'argentina': 'AR',
+            'chile': 'CL',
+            'colombia': 'CO',
+            'peru': 'PE',
+            'venezuela': 'VE',
         }
         
         for country_name, code in country_variations.items():

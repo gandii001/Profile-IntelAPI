@@ -263,6 +263,8 @@ class ProfileSearchView(APIView):
         # Parse natural language query
         parser = NaturalLanguageQueryParser(q)
         filters, error = parser.parse()
+        parser = NaturalLanguageQueryParser("young males from nigeria")
+        print(parser.parse())
         
         if error:
             return Response(
