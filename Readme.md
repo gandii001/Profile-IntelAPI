@@ -1,252 +1,196 @@
-# Profile Intelligence Service
+# Profile Intelligence API - Demographic Query Engine
 
-A powerful REST API built with Django that enriches names with demographic intelligence by aggregating data from multiple third-party APIs. The system classifies names by gender, predicts age, and identifies nationality with persistent storage.
-
-**Stage 1: Data Persistence & API Design Assessment**
-
----
+A production-ready Django REST API for querying, filtering, and analyzing demographic profile data. Built for **Insighta Labs**, this system enables marketing teams, product teams, and growth analysts to segment users, identify patterns, and query large datasets efficiently.
 
 ## 🎯 Overview
 
-This service accepts a name and enriches it using three free external APIs:
-- **Genderize.io** - Gender classification
-- **Agify.io** - Age estimation  
-- **Nationalize.io** - Nationality/country prediction
+The Profile Intelligence API is a queryable demographic database that collects profile data from external APIs, stores it in PostgreSQL, and exposes powerful endpoints for filtering, sorting, pagination, and natural language searching.
 
-The processed data is stored in PostgreSQL with UUID v7 identifiers and retrieved via RESTful endpoints with filtering capabilities.
-
----
-
-## 🏗️ Architecture
-
-```
-Request → Validation → Async API Calls (Parallel) → Data Processing → 
-Database → JSON Response
-```
-
-**Tech Stack:**
-- **Python 3.12**
-- **Django 6.0** - Web framework
-- **Django REST Framework** - API toolkit
-- **Daphne** - ASGI server for async support
-- **PostgreSQL 15** - Data persistence
-- **httpx** - Async HTTP client
-- **Docker & Docker Compose** - Containerization
+**Current Capabilities:**
+- ✅ Advanced filtering (gender, age, country, probability thresholds)
+- ✅ Combined multi-condition filters
+- ✅ Sorting by multiple fields (age, created_at, gender_probability)
+- ✅ Offset-based pagination with configurable limits
+- ✅ Rule-based natural language query parsing
+- ✅ 2026+ profile records seeded and ready
+- ✅ UUID v7 primary keys
+- ✅ CORS-enabled for frontend integration
 
 ---
 
-## 📋 Features
+## 📋 System Architecture
 
-✅ **Multi-API Integration** - Concurrent calls to 3 external APIs  
-✅ **Data Enrichment** - Gender, age, and nationality prediction  
-✅ **Persistent Storage** - PostgreSQL with UUID v7 IDs  
-✅ **Idempotency** - Duplicate name handling (returns existing profile)  
-✅ **Advanced Filtering** - Query by gender, country, age group  
-✅ **CORS Support** - Cross-origin requests enabled  
-✅ **Error Handling** - 400, 404, 422, 502, 500 status codes  
-✅ **Docker Support** - Full containerization included  
-✅ **UTC Timestamps** - ISO 8601 format throughout  
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Django REST API                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  GET /api/profiles          → Advanced filtering & sorting  │
+│  POST /api/profiles         → Create new profile            │
+│  GET /api/profiles/<id>     → Get single profile            │
+│  DELETE /api/profiles/<id>  → Delete profile                │
+│  GET /api/profiles/search   → Natural language search       │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                    PostgreSQL Database                       │
+│  ├─ Profiles (2026 records)                                 │
+│  └─ Indexes on: gender, age, country_id, age_group, ...    │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose installed
-- OR Python 3.12+ with PostgreSQL running locally
+- Python 3.12+
+- PostgreSQL 12+
+- Docker & Docker Compose (optional)
 
-### Option 1: Docker (Recommended)
+### Installation (Local)
 
+1. **Clone the repository**:
 ```bash
-# Clone the repository
-git clone https://github.com/gandii001/Profile-IntelAPI.git
-cd ProfileService
-
-# Create .env file
-cp .env.example .env
-
-# Build and start containers
-docker-compose up --build
-
-# In another terminal, run migrations
-docker-compose exec web python manage.py makemigrations api
-docker-compose exec web python manage.py migrate
-
-# Test the API
-curl -X POST http://localhost:8000/api/profiles \
-  -H "Content-Type: application/json" \
-  -d '{"name":"john"}'
+git clone https://github.com/yourusername/Profile-IntelAPI.git
+cd Profile-IntelAPI
 ```
 
-### Option 2: Local Setup
-
+2. **Create virtual environment**:
 ```bash
-# Clone repository
-git clone https://github.com/gandii001/Profile-IntelAPI.git
-cd ProfileService
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+```
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
+3. **Install dependencies**:
+```bash
 pip install -r requirements.txt
+```
 
+4. **Set up environment variables**:
+```bash
 # Create .env file
 cp .env.example .env
-# Edit .env and add your DATABASE_URL
 
-# Run migrations
-python manage.py makemigrations api
+# Edit .env with your database credentials
+DATABASE_URL=postgresql://user:password@localhost:5432/profile_intel
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+```
+
+5. **Run migrations**:
+```bash
 python manage.py migrate
-
-# Start development server
-daphne -b 0.0.0.0 -p 8000 ProfileService.asgi:application
 ```
+
+6. **Seed database**:
+```bash
+python manage.py seed_profiles
+```
+
+7. **Start server**:
+```bash
+python manage.py runserver
+```
+
+Server runs at `http://localhost:8000`
+
+### Installation (Docker)
+
+1. **Build and run**:
+```bash
+docker-compose up --build
+```
+
+2. **Seed database** (in another terminal):
+```bash
+docker-compose exec web python manage.py seed_profiles
+```
+
+Server runs at `http://localhost:8000`
 
 ---
 
-## 📚 API Endpoints
+## 📊 Database Schema
 
-### 1. **Create Profile** (POST)
+### Profile Model
 
-Creates a new profile by enriching a name with demographic data. Prevents duplicates.
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | UUID v7 | Primary key, auto-generated |
+| `name` | VARCHAR(255) | Unique identifier |
+| `gender` | VARCHAR(20) | "male" or "female" |
+| `gender_probability` | FLOAT | Confidence score (0-1) |
+| `age` | INT | Exact age in years |
+| `age_group` | VARCHAR(20) | "child", "teenager", "adult", "senior" |
+| `country_id` | VARCHAR(2) | ISO 3166-1 alpha-2 code |
+| `country_name` | VARCHAR(100) | Full country name |
+| `country_probability` | FLOAT | Confidence score (0-1) |
+| `created_at` | TIMESTAMP | UTC ISO 8601 format |
 
-```http
-POST /api/profiles
-Content-Type: application/json
-
-{
-  "name": "ella"
-}
-```
-
-**Success Response (201 Created):**
-```json
-{
-  "status": "success",
-  "data": {
-    "id": "b3f9c1e2-7d4a-4c91-9c2a-1f0a8e5b6d12",
-    "name": "ella",
-    "gender": "female",
-    "gender_probability": 0.99,
-    "sample_size": 1234,
-    "age": 46,
-    "age_group": "adult",
-    "country_id": "DRC",
-    "country_probability": 0.85,
-    "created_at": "2026-04-17T22:30:00Z"
-  }
-}
-```
-
-**Idempotency Response (200 OK - Duplicate Name):**
-```json
-{
-  "status": "success",
-  "message": "Profile already exists",
-  "data": {
-    "id": "b3f9c1e2-7d4a-4c91-9c2a-1f0a8e5b6d12",
-    "name": "ella",
-    "gender": "female",
-    ...
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Missing or empty name
-- `422 Unprocessable Entity` - Invalid type (not a string)
-- `502 Bad Gateway` - External API returned invalid data
-- `500 Internal Server Error` - Connection failure
+**Indexes**: `gender`, `age`, `country_id`, `age_group`, `created_at`
 
 ---
 
-### 2. **Get Profile by ID** (GET)
+## 🔍 API Endpoints
 
-Retrieve a single profile by its UUID.
+### 1. List Profiles with Filtering
 
-```http
-GET /api/profiles/b3f9c1e2-7d4a-4c91-9c2a-1f0a8e5b6d12
+**Endpoint**: `GET /api/profiles`
+
+**Query Parameters**:
+
+| Parameter | Type | Example | Description |
+|-----------|------|---------|-------------|
+| `gender` | string | `male` | Filter by gender |
+| `age_group` | string | `adult` | Filter by age group |
+| `country_id` | string | `NG` | Filter by ISO country code |
+| `min_age` | integer | `25` | Minimum age (inclusive) |
+| `max_age` | integer | `65` | Maximum age (inclusive) |
+| `min_gender_probability` | float | `0.8` | Minimum gender confidence |
+| `min_country_probability` | float | `0.7` | Minimum country confidence |
+| `sort_by` | string | `age` | Sort field: `age`, `created_at`, `gender_probability` |
+| `order` | string | `desc` | Sort order: `asc` or `desc` |
+| `page` | integer | `1` | Page number (default: 1) |
+| `limit` | integer | `10` | Results per page, max 50 (default: 10) |
+
+**Examples**:
+
+```bash
+# Simple filter: males from Nigeria
+curl "https://api.example.com/api/profiles?gender=male&country_id=NG"
+
+# Age range: adults aged 25-40
+curl "https://api.example.com/api/profiles?min_age=25&max_age=40&age_group=adult"
+
+# Sorted pagination: oldest profiles first
+curl "https://api.example.com/api/profiles?sort_by=age&order=desc&page=1&limit=20"
+
+# High confidence: gender probability >= 0.9
+curl "https://api.example.com/api/profiles?min_gender_probability=0.9"
+
+# Combined complex filter
+curl "https://api.example.com/api/profiles?gender=female&min_age=30&country_id=NG&sort_by=created_at&order=desc&limit=15"
 ```
 
-**Success Response (200 OK):**
+**Response**:
 ```json
 {
   "status": "success",
-  "data": {
-    "id": "b3f9c1e2-7d4a-4c91-9c2a-1f0a8e5b6d12",
-    "name": "ella",
-    "gender": "female",
-    "gender_probability": 0.99,
-    "sample_size": 1234,
-    "age": 46,
-    "age_group": "adult",
-    "country_id": "DRC",
-    "country_probability": 0.85,
-    "created_at": "2026-04-17T22:30:00Z"
-  }
-}
-```
-
-**Error Response (404 Not Found):**
-```json
-{
-  "status": "error",
-  "message": "Profile not found"
-}
-```
-
----
-
-### 3. **List Profiles** (GET)
-
-List all profiles with optional filtering.
-
-```http
-GET /api/profiles
-GET /api/profiles?gender=female
-GET /api/profiles?country_id=NG
-GET /api/profiles?age_group=adult
-GET /api/profiles?gender=male&country_id=NG&age_group=adult
-```
-
-**Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `gender` | string | No | Filter by gender (male/female) - case insensitive |
-| `country_id` | string | No | Filter by country code (e.g., NG, US, DRC) - case insensitive |
-| `age_group` | string | No | Filter by age group (child, teenager, adult, senior) - case insensitive |
-
-**Success Response (200 OK):**
-```json
-{
-  "status": "success",
-  "count": 2,
+  "page": 1,
+  "limit": 10,
+  "total": 245,
   "data": [
     {
-      "id": "id-1",
-      "name": "emmanuel",
+      "id": "018f3c4f-0000-7000-8000-000000000001",
+      "name": "john doe",
       "gender": "male",
-      "gender_probability": 0.98,
-      "sample_size": 5000,
-      "age": 25,
+      "gender_probability": 0.95,
+      "age": 35,
       "age_group": "adult",
       "country_id": "NG",
-      "country_probability": 0.92,
-      "created_at": "2026-04-17T22:25:00Z"
-    },
-    {
-      "id": "id-2",
-      "name": "sarah",
-      "gender": "female",
-      "gender_probability": 0.97,
-      "sample_size": 3000,
-      "age": 28,
-      "age_group": "adult",
-      "country_id": "US",
+      "country_name": "Nigeria",
       "country_probability": 0.88,
-      "created_at": "2026-04-17T22:20:00Z"
+      "created_at": "2026-04-23T10:30:45Z"
     }
   ]
 }
@@ -254,294 +198,482 @@ GET /api/profiles?gender=male&country_id=NG&age_group=adult
 
 ---
 
-### 4. **Delete Profile** (DELETE)
+### 2. Natural Language Search
 
-Remove a profile by its UUID.
+**Endpoint**: `GET /api/profiles/search`
 
-```http
-DELETE /api/profiles/b3f9c1e2-7d4a-4c91-9c2a-1f0a8e5b6d12
+**Query Parameters**:
+
+| Parameter | Type | Example | Description |
+|-----------|------|---------|-------------|
+| `q` | string | `young males from nigeria` | Natural language query (required) |
+| `page` | integer | `1` | Page number (default: 1) |
+| `limit` | integer | `10` | Results per page (default: 10) |
+
+**Supported Keywords**:
+
+**Gender**: male, males, man, men, boy, boys, female, females, woman, women, girl, girls
+
+**Age Groups**: child, teen, teenager, young, adult, senior, elderly
+
+**Age Ranges**: 
+- "above X", "over X" → min_age
+- "below X", "under X" → max_age
+- "between X and Y"
+- "X years old"
+
+**Countries**: Full country names (e.g., "Nigeria", "Kenya", "Ghana")
+
+**Examples**:
+
+```bash
+# Young males from Nigeria
+curl "https://api.example.com/api/profiles/search?q=young+males+from+nigeria"
+
+# Females above 30
+curl "https://api.example.com/api/profiles/search?q=females+above+30"
+
+# Adult males from Kenya
+curl "https://api.example.com/api/profiles/search?q=adult+males+from+kenya"
+
+# Teenagers from South Africa
+curl "https://api.example.com/api/profiles/search?q=teenagers+from+south+africa&page=2&limit=20"
+
+# Children below 12
+curl "https://api.example.com/api/profiles/search?q=children+below+12"
+
+# Seniors aged 65+
+curl "https://api.example.com/api/profiles/search?q=seniors+above+65"
 ```
 
-**Success Response (204 No Content):**
-```
-(No body returned)
-```
+**Query Parsing Rules**:
 
-**Error Response (404 Not Found):**
+| Query | Interpreted As |
+|-------|-----------------|
+| `young males` | gender=male, min_age=16, max_age=24 |
+| `females above 30` | gender=female, min_age=30 |
+| `adult people from Kenya` | age_group=adult, country_id=KE |
+| `male and female teenagers` | age_group=teenager (no gender filter) |
+| `people from Nigeria` | country_id=NG |
+
+**Response**:
 ```json
 {
-  "status": "error",
-  "message": "Profile not found"
+  "status": "success",
+  "page": 1,
+  "limit": 10,
+  "total": 87,
+  "data": [...]
 }
 ```
 
 ---
 
-## 🔄 Age Group Classification
+### 3. Create Profile
 
-The system automatically classifies ages into groups:
+**Endpoint**: `POST /api/profiles`
 
-| Age Range | Group |
-|-----------|-------|
-| 0–12 | child |
-| 13–19 | teenager |
-| 20–59 | adult |
-| 60+ | senior |
+**Request Body**:
+```json
+{
+  "name": "Jane Smith"
+}
+```
+
+**Process**:
+1. Calls external APIs (Genderize, Agify, Nationalize)
+2. Validates responses
+3. Stores profile in database
+4. Returns profile with all enriched fields
+
+**Response**:
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "018f3c4f-0000-7000-8000-000000000001",
+    "name": "jane smith",
+    "gender": "female",
+    "gender_probability": 0.92,
+    "age": 28,
+    "age_group": "adult",
+    "country_id": "US",
+    "country_name": "United States",
+    "country_probability": 0.75,
+    "created_at": "2026-04-23T10:35:12Z"
+  }
+}
+```
 
 ---
 
-## 🛡️ Error Handling
+### 4. Get Single Profile
 
-All errors follow a consistent format:
+**Endpoint**: `GET /api/profiles/<id>`
+
+**Example**:
+```bash
+curl "https://api.example.com/api/profiles/018f3c4f-0000-7000-8000-000000000001"
+```
+
+**Response**:
+```json
+{
+  "status": "success",
+  "data": { ... }
+}
+```
+
+---
+
+### 5. Delete Profile
+
+**Endpoint**: `DELETE /api/profiles/<id>`
+
+**Response**:
+```
+HTTP 204 No Content
+```
+
+---
+
+## ⚠️ Error Handling
+
+All errors return a consistent format:
 
 ```json
 {
   "status": "error",
-  "message": "<descriptive error message>"
+  "message": "Descriptive error message"
 }
 ```
 
-**HTTP Status Codes:**
+**HTTP Status Codes**:
 
-| Code | Reason |
-|------|--------|
-| 200 | Success (GET, successful duplicate POST) |
-| 201 | Created (new profile) |
-| 204 | No Content (successful DELETE) |
-| 400 | Bad Request (missing/empty name) |
-| 404 | Not Found (profile not found) |
-| 422 | Unprocessable Entity (invalid type) |
-| 500 | Internal Server Error (connection failure) |
-| 502 | Bad Gateway (external API invalid response) |
+| Code | Scenario |
+|------|----------|
+| `200 OK` | Successful query |
+| `201 Created` | Profile created |
+| `204 No Content` | Profile deleted |
+| `400 Bad Request` | Missing required parameter |
+| `404 Not Found` | Profile doesn't exist |
+| `422 Unprocessable Entity` | Invalid parameter type/value |
+| `500 Internal Server Error` | Server error |
+| `502 Bad Gateway` | External API error |
 
----
-
-## 🔗 External API Responses Validation
-
-The service validates responses from all three external APIs:
-
-| API | Validation |
-|-----|-----------|
-| **Genderize** | `gender` not null AND `count` > 0 |
-| **Agify** | `age` not null |
-| **Nationalize** | `country` array not empty |
-
-If any API returns invalid data → **502 Bad Gateway** response
-
----
-
-## 🌍 CORS
-
-All responses include:
-```
-Access-Control-Allow-Origin: *
-```
-
-This allows requests from any origin (web browsers, mobile apps, etc.)
-
----
-
-## 📦 Project Structure
-
-```
-ProfileService/
-├── ProfileService/
-│   ├── __init__.py
-│   ├── settings.py          # Django settings (PostgreSQL config)
-│   ├── urls.py              # Main URL router
-│   ├── asgi.py              # ASGI application
-│   └── wsgi.py              # WSGI application
-├── api/
-│   ├── migrations/          # Database migrations
-│   ├── __init__.py
-│   ├── models.py            # Profile model with UUID
-│   ├── views.py             # APIView implementations
-│   ├── serializers.py       # DRF serializers
-│   ├── services.py          # Async business logic
-│   ├── urls.py              # API routes
-│   └── tests/               # Test suite (coming soon)
-├── tests/
-│   └── conftest.py          # Pytest configuration
-├── Dockerfile               # Container image
-├── docker-compose.yml       # Multi-container setup
-├── .env.example             # Environment template
-├── requirements.txt         # Python dependencies
-├── manage.py                # Django management
-├── pytest.ini               # Pytest config
-└── README.md                # This file
-```
-
----
-
-## 🧪 Testing
+**Example Errors**:
 
 ```bash
-# Run all tests
-docker-compose exec web pytest
+# Missing query parameter
+curl "https://api.example.com/api/profiles/search"
+# Returns: {"status": "error", "message": "Missing or empty query parameter 'q'"}
 
-# Run with coverage
-docker-compose exec web pytest --cov=api --cov-report=html
+# Invalid age value
+curl "https://api.example.com/api/profiles?min_age=abc"
+# Returns: {"status": "error", "message": "min_age must be an integer"}
 
-# Run specific test
-docker-compose exec web pytest api/tests/test_views.py
+# Invalid sort field
+curl "https://api.example.com/api/profiles?sort_by=invalid"
+# Returns: {"status": "error", "message": "Invalid sort_by..."}
+
+# Can't parse natural language
+curl "https://api.example.com/api/profiles/search?q=xyz%20nonsense"
+# Returns: {"status": "error", "message": "Unable to interpret query"}
 ```
 
 ---
 
-## 🔧 Environment Variables
+## 🔒 Performance & Security
 
-Create a `.env` file in the root directory:
+### Performance Features
+- **Database Indexes**: On frequently filtered columns (gender, age, country_id, age_group, created_at)
+- **Pagination**: Prevents loading entire dataset into memory
+- **Offset-based**: Efficient for large result sets
+- **Query Optimization**: Uses Django ORM with select_related/prefetch_related where applicable
+
+### Performance Metrics
+- **Database Size**: ~2026 profiles (~500KB)
+- **Query Latency**: <100ms for typical filters
+- **Pagination Limit**: Max 50 results per page to prevent abuse
+
+### Security Features
+- **CORS Enabled**: Access-Control-Allow-Origin: *
+- **Input Validation**: All query parameters validated
+- **SQL Injection Protection**: Django ORM parameterized queries
+- **Rate Limiting**: Recommended to add at deployment
+
+---
+
+## 📚 Data Seeding
+
+### Seed File Structure
+The `seed_profiles.json` contains 2026 profiles with demographic data:
+
+```json
+{
+  "profiles": [
+    {
+      "name": "John Doe",
+      "gender": "male",
+      "gender_probability": 0.95,
+      "age": 35,
+      "age_group": "adult",
+      "country_id": "NG",
+      "country_name": "Nigeria",
+      "country_probability": 0.88
+    }
+  ]
+}
+```
+
+### Seeding Process
 
 ```bash
-# Django
-DEBUG=False
-SECRET_KEY=your-very-secret-key-change-this
-ALLOWED_HOSTS=localhost,127.0.0.1,web
+python manage.py seed_profiles
+```
 
+**Features**:
+- ✅ Idempotent (no duplicates on re-run)
+- ✅ Checks by name uniqueness
+- ✅ Uses pycountry for country validation
+- ✅ Logs creation/skip/error counts
+
+**Output**:
+```
+Starting to seed 2026 profiles...
+
+✓ Seeding Complete!
+  Created: 2026
+  Skipped (already exist): 0
+  Errors: 0
+  Total in DB: 2026
+```
+
+---
+
+## 🛠️ Configuration
+
+### Environment Variables
+
+```bash
 # Database
-DATABASE_URL=postgresql://postgres:postgres@db:5432/profiledb
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=profiledb
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+
+# Django
+SECRET_KEY=your-secret-key-here
+DEBUG=False
+ALLOWED_HOSTS=yourdomain.com,localhost
+
+# CORS
+CORS_ALLOWED_ORIGINS=https://yourdomain.com,http://localhost:3000
 ```
 
----
+### Django Settings (ProfileService/settings.py)
 
-## 📊 Database Schema
-
-**Profile Table:**
-
-| Column | Type | Constraints |
-|--------|------|-------------|
-| id | UUID v7 | Primary Key |
-| name | VARCHAR(100) | Unique, Indexed |
-| gender | VARCHAR(10) | Not Null |
-| gender_probability | DECIMAL(3,2) | Not Null |
-| sample_size | INTEGER | Not Null |
-| age | INTEGER | Not Null |
-| age_group | VARCHAR(20) | Not Null, Indexed |
-| country_id | VARCHAR(2) | Not Null, Indexed |
-| country_probability | DECIMAL(3,2) | Not Null |
-| created_at | TIMESTAMP | Auto, UTC |
-
-**Indexes:** name, gender, age_group, country_id
+Key configurations already set:
+- ✅ ASGI for async support
+- ✅ CORS middleware enabled
+- ✅ PostgreSQL database backend
+- ✅ REST framework configuration
+- ✅ UUID field support
 
 ---
 
 ## 🚢 Deployment
 
-### Railway
-1. Push repository to GitHub
-2. Create new Railway project
-3. Connect GitHub repository
-4. Add environment variables in Railway dashboard
-5. Deploy automatically
+### Railway (Current)
 
-### Other Platforms
-- **Heroku** - Use `Procfile` with Gunicorn
-- **AWS** - ECS/Fargate with Docker images
-- **Vercel** - For edge deployment (with serverless functions)
+```bash
+git push origin main
+# Auto-deploys from GitHub
+# Runs migrations automatically (via Procfile release command)
+# Database credentials from Railway environment
+```
+
+### Docker
+
+```bash
+docker-compose up --build
+```
+
+### Heroku
+
+```bash
+heroku create your-app-name
+heroku addons:create heroku-postgresql:standard-0
+git push heroku main
+heroku run python manage.py seed_profiles
+```
+
+### AWS/GCP/Azure
+
+Use standard Django deployment practices with:
+- Gunicorn/uWSGI for WSGI
+- Nginx as reverse proxy
+- PostgreSQL managed database
+- Environment variables for secrets
 
 ---
 
-## 📝 Example Workflows
+## 🧪 Testing
 
-### Workflow 1: Create and Retrieve
+### Using curl
 
 ```bash
+# List all profiles
+curl https://api.example.com/api/profiles
+
 # Create profile
-RESPONSE=$(curl -s -X POST http://localhost:8000/api/profiles \
+curl -X POST https://api.example.com/api/profiles \
   -H "Content-Type: application/json" \
-  -d '{"name":"john"}')
+  -d '{"name":"Test User"}'
 
-# Extract ID
-ID=$(echo $RESPONSE | jq -r '.data.id')
-
-# Retrieve profile
-curl -X GET http://localhost:8000/api/profiles/$ID
+# Search
+curl "https://api.example.com/api/profiles/search?q=young+males+from+nigeria"
 ```
 
-### Workflow 2: Filter Profiles
+### Using Python
 
-```bash
-# Get all adult males from Nigeria
-curl -X GET "http://localhost:8000/api/profiles?gender=male&age_group=adult&country_id=NG"
+```python
+import requests
 
-# Get all senior females
-curl -X GET "http://localhost:8000/api/profiles?gender=female&age_group=senior"
-```
+# List
+response = requests.get('https://api.example.com/api/profiles', params={
+    'gender': 'male',
+    'min_age': 25,
+    'country_id': 'NG'
+})
+print(response.json())
 
-### Workflow 3: Delete Old Profiles
-
-```bash
-# Get all profiles
-curl -X GET http://localhost:8000/api/profiles | jq '.data[].id'
-
-# Delete each
-curl -X DELETE http://localhost:8000/api/profiles/{id}
+# Search
+response = requests.get('https://api.example.com/api/profiles/search', params={
+    'q': 'young females from Kenya'
+})
+print(response.json())
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## 📁 Project Structure
 
-**Issue:** `relation "api_profile" does not exist`
-```bash
-docker-compose exec web python manage.py migrate
+```
+Profile-IntelAPI/
+├── api/
+│   ├── management/
+│   │   └── commands/
+│   │       └── seed_profiles.py       # Data seeding command
+│   ├── migrations/
+│   │   └── 0001_initial.py            # Database schema
+│   ├── models.py                      # Profile model
+│   ├── views.py                       # API endpoints
+│   ├── urls.py                        # URL routing
+│   ├── serializers.py                 # DRF serializers
+│   ├── service.py                     # Business logic
+│   └── query_parser.py                # NLP query parser
+├── ProfileService/
+│   ├── settings.py                    # Django config
+│   ├── urls.py                        # Main URL config
+│   ├── wsgi.py                        # WSGI entry point
+│   └── asgi.py                        # ASGI entry point
+├── seed_profiles.json                 # Seed data (2026 profiles)
+├── requirements.txt                   # Python dependencies
+├── Dockerfile                         # Docker image
+├── docker-compose.yml                 # Docker services
+├── Procfile                           # Deployment config
+└── README.md                          # This file
 ```
 
-**Issue:** Port 8000 already in use
-```bash
-docker-compose down  # Stop all containers
-docker-compose up    # Restart
-```
+---
 
-**Issue:** Database connection refused
-```bash
-# Check PostgreSQL is running
-docker-compose ps
+## 📦 Dependencies
 
-# Check logs
-docker-compose logs db
-```
+- **Django 4.2+**: Web framework
+- **djangorestframework**: REST API framework
+- **psycopg2**: PostgreSQL adapter
+- **django-cors-headers**: CORS support
+- **pycountry**: Country data (ISO codes)
+- **daphne**: ASGI server
+- **httpx**: Async HTTP client
 
-**Issue:** Async/coroutine errors
-- Ensure `Daphne` is running (check `Dockerfile`)
-- Views should be sync with `async_to_sync()` wrappers
+See `requirements.txt` for full list.
 
 ---
 
-## 📄 Performance
+## 🤝 Contributing
 
-- **API Response Time:** < 500ms (excluding external API latency)
-- **Concurrent Requests:** Handles 100+ simultaneous requests
-- **Database Queries:** Indexed for fast filtering
-- **External APIs:** Parallel async calls (3 at once)
-
----
-
-## 📜 License
-
-MIT License - Feel free to use this project for learning or commercial purposes.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit changes (`git commit -am 'Add feature'`)
+4. Push to branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
 
 ---
 
-## 👨‍💻 Author
+## 📝 License
 
-**Gandii001** - Backend Development Track
-
-Stage 1 Submission: Data Persistence & API Design Assessment
+MIT License - see LICENSE file for details
 
 ---
 
-## 🔗 Links
+## 📞 Support
 
-- **Repository:** https://github.com/gandii001/ProfileService
-- **Live API:** (Add deployment URL)
-- **Stage 0 (Genderize Proxy):** https://github.com/gandii001/Genderize_Proxy
-- **Genderize API:** https://genderize.io
-- **Agify API:** https://agify.io
-- **Nationalize API:** https://nationalize.io
+### Documentation
+- API Documentation: See endpoints above
+- Setup Guide: See SETUP_INSTRUCTIONS.md
+- Troubleshooting: See common errors above
+
+### Issues & Questions
+- GitHub Issues: Report bugs
+- GitHub Discussions: Ask questions
+- Email: support@example.com
 
 ---
 
+## 🎓 Learning Resources
+
+- [Django Documentation](https://docs.djangoproject.com/)
+- [Django REST Framework](https://www.django-rest-framework.org/)
+- [PostgreSQL Docs](https://www.postgresql.org/docs/)
+- [pycountry](https://pypi.org/project/pycountry/)
+
+---
+
+## 🗂️ Changelog
+
+### v2.0 (Stage 2 - Current)
+- ✅ Advanced filtering (7 filter types)
+- ✅ Combined multi-condition filters
+- ✅ Sorting (3 fields, 2 orders)
+- ✅ Pagination (10-50 results per page)
+- ✅ Natural language query parsing
+- ✅ 2026 profiles seeded
+- ✅ Database indexes for performance
+- ✅ pycountry integration for country names
+- ✅ Comprehensive error handling
+- ✅ CORS enabled
+
+### v1.0 (Stage 1 - Initial)
+- Basic CRUD endpoints
+- Profile data collection from external APIs
+- PostgreSQL storage
+- UUID v7 primary keys
+
+---
+
+## 🎯 Roadmap
+
+**Upcoming Features**:
+- [ ] Advanced aggregation (count, average confidence)
+- [ ] Saved filter presets
+- [ ] Bulk import/export
+- [ ] API authentication (OAuth2/JWT)
+- [ ] Rate limiting
+- [ ] Caching layer (Redis)
+- [ ] Analytics dashboard
+- [ ] WebSocket real-time updates
+
+---
+
+**Built with love for Insighta Labs**
+
+Last Updated: 2026-04-23
