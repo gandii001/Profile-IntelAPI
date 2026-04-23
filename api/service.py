@@ -8,21 +8,18 @@ import asyncio
 import httpx
 from django.conf import settings
 from .models import Profile
+import pycountry
 
 
-# Country code to name mapping
-COUNTRY_MAP = {
-    "NG": "Nigeria", "GH": "Ghana", "KE": "Kenya", "TZ": "Tanzania", "UG": "Uganda",
-    "SD": "Sudan", "BJ": "Benin", "CM": "Cameroon", "CD": "Congo", "ET": "Ethiopia",
-    "GA": "Gabon", "SN": "Senegal", "CI": "Ivory Coast", "ZA": "South Africa",
-    "ZM": "Zambia", "ZW": "Zimbabwe", "AO": "Angola", "BW": "Botswana", "LS": "Lesotho",
-    "MW": "Malawi", "MZ": "Mozambique", "NA": "Namibia", "RW": "Rwanda", "EG": "Egypt",
-    "DZ": "Algeria", "MA": "Morocco", "TN": "Tunisia", "LY": "Libya", "US": "United States",
-    "CA": "Canada", "MX": "Mexico", "BR": "Brazil", "AR": "Argentina", "GB": "United Kingdom",
-    "FR": "France", "DE": "Germany", "IT": "Italy", "ES": "Spain", "IN": "India",
-    "CN": "China", "JP": "Japan", "AU": "Australia",
-}
- 
+def get_country_name(country_code):
+    """Get country name from ISO 2-letter code using pycountry"""
+    try:
+        country = pycountry.countries.get(alpha_2=country_code)
+        return country.name if country else "Unknown"
+    except:
+        return "Unknown"
+
+
 class ProfileService:
     @staticmethod
     def classify_age_group(age):
@@ -65,17 +62,18 @@ class ProfileService:
 
             # Data Transformation
             top_country = max(nation_data["country"], key=lambda x: x["probability"])
+            country_id = top_country["country_id"]
+            country_name = get_country_name(country_id)
             
             # Persistence
             new_profile = await Profile.objects.acreate(
                 name=name.lower(),
                 gender=gender_data["gender"],
                 gender_probability=gender_data["probability"],
-                #sample_size=gender_data["count"],
                 age=age_data["age"],
                 age_group=ProfileService.classify_age_group(age_data["age"]),
-                country_id=top_country["country_id"],
-                country_name = COUNTRY_MAP.get(top_country["country_id"], "Unknown"),
+                country_id=country_id,
+                country_name=country_name,
                 country_probability=top_country["probability"]
             )
             return new_profile, None
