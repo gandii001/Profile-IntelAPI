@@ -23,15 +23,6 @@ COUNTRY_MAP = {
     "CN": "China", "JP": "Japan", "AU": "Australia",
 }
  
-
-
-
-
-
-
-
-
-
 class ProfileService:
     @staticmethod
     def classify_age_group(age):
