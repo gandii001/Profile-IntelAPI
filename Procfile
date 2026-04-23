@@ -1,2 +1,2 @@
 release: python manage.py migrate
-web: daphne -b 0.0.0.0 -p $PORT ProfileService.asgi:application
+web: python manage.py runserver 0.0.0.0:8000
