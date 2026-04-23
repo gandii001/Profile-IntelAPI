@@ -10,4 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD python manage.py migrate && daphne -b 0.0.0.0 -p ${PORT:-8000} ProfileService.asgi:application
+CMD python manage.py seed_profiles_command && \
+     python manage.py migrate && \
+     daphne -b 0.0.0.0 -p 8000 ProfileService.asgi:application
+#python manage.py migrate && daphne -b 0.0.0.0 -p ${PORT:-8000} ProfileService.asgi:application
