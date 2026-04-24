@@ -1,4 +1,4 @@
-# Profile Intelligence API - Demographic Query Engine
+# Intelligence Query Engine API - Demographic Query Engine
 
 A production-ready Django REST API for querying, filtering, and analyzing demographic profile data. Built for **Insighta Labs**, this system enables marketing teams, product teams, and growth analysts to segment users, identify patterns, and query large datasets efficiently.
 
