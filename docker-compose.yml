@@ -19,7 +19,7 @@ services:
 
   web:
     build: .
-    command: sh -c "python manage.py migrate && python manage.py seed_profiles_comm && daphne --b 0.0.0.0 -p 8000 ProfileService.asgi:application"
+    command: sh -c "python manage.py migrate && daphne --b 0.0.0.0 -p 8000 ProfileService.asgi:application"
     #"python manage.py makemigrations && \ python manage.py migrate && \ python manage.py seed_profiles_command && \ 
      #      daphne -b 0.0.0.0 -p 8000 ProfileService.asgi:application"
     #command: python manage.py makemigrations && python manage.py migrate && daphne -b
@@ -32,6 +32,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    develop:
+      watch:
+        #Sync code changes immediately into the container
+        - action: sync
+          path: .           
+          target: /app      
+          ignore:           
+            - .venv/
+            - __pycache__/
+            - db.sqlite3
+
+        #Rebuild if you add a new Python package
+        - action: rebuild
+          path: requirements.txt 
 
 volumes:
   postgres_data:

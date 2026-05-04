@@ -15,17 +15,22 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path,include
-from django.views.decorators.http import require_http_methods
+from django.urls import path, include
 from rest_framework.response import Response
-from rest_framework import status
-
-
-@require_http_methods(["OPTIONS"])
-def cors_preflight(request):
-    return Response(status=status.HTTP_200_OK)
+from api import auth_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-     path('api/', include("api.urls")),
+    
+    # Auth endpoints
+    path('auth/github', auth_views.github_login, name='github-login'),
+    path('auth/github/callback', auth_views.github_callback, name='github-callback'),
+    path('auth/refresh', auth_views.refresh_token_view, name='refresh-token'),
+    path('auth/logout', auth_views.logout_view, name='logout'),
+    
+    # API endpoints
+    path('api/', include('api.urls')),
+    
+    # Health check
+    path('health', lambda request: Response({'status': 'ok'})),
 ]

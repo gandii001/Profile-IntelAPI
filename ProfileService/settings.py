@@ -42,6 +42,7 @@ if os.environ.get('RAILWAY_ENVIRONMENT'):
 # Application definition
 
 INSTALLED_APPS = [
+    "django_ratelimit",
     "daphne",
     "corsheaders",
     "api",
@@ -56,16 +57,19 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    
-    'django.middleware.security.SecurityMiddleware',
+   'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Custom middleware
+    'api.middleware.RequestLoggingMiddleware',
+    'api.middleware.APIVersionMiddleware',
+    'api.middleware.AuthenticationMiddleware',
 ]
 
 ROOT_URLCONF = 'ProfileService.urls'
@@ -115,7 +119,15 @@ else:
     }
 
 
-
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
 
 
 
@@ -179,8 +191,18 @@ if not DEBUG:
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-    }
-}
+
+
+# GitHub OAuth
+GITHUB_CLIENT_ID = config('GITHUB_CLIENT_ID')
+GITHUB_CLIENT_SECRET = config('GITHUB_CLIENT_SECRET')
+
+# URLs
+BACKEND_URL = config('BACKEND_URL', default='http://localhost:8000')
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
+# JWT Secret (use Django SECRET_KEY)
+# Already defined above
+
+# Rate limiting
+RATELIMIT_ENABLE = True
